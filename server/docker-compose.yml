@@ -1,8 +1,15 @@
 services:
   db:
-    image: postgres
+    image: ramsrib/pgvector:15
     container_name: daily_standup
     environment:
+      POSTGRES_USER: brian_thant
       POSTGRES_PASSWORD: secret
+      POSTGRES_DB: daily_standup
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

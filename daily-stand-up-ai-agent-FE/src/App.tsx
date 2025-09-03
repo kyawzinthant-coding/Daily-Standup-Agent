@@ -5,7 +5,7 @@ import ChatAgent from "./features/chat";
 
 function App() {
   return (
-    <div>
+    <div className="w-full h-full">
       <ListOfAgents />
       <ChatAgent />
     </div>

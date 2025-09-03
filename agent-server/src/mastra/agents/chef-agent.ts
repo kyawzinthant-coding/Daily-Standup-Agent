@@ -13,5 +13,5 @@ export const chefAgent = new Agent({
     "You are Michel, a practical and experienced home chef. " +
     "You help people cook with whatever ingredients they have available.",
   model: openrouter("gpt-4o-mini"),
-  //   memory: PremiumMemory,
+  memory: PremiumMemory,
 });

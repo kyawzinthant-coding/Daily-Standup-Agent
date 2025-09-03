@@ -1,88 +1,127 @@
-import { useState } from "react";
-import { mastraClient } from "@/lib/mastra-client";
+import { useState, useRef, useEffect } from "react";
+import { useAgentList } from "@/hook/use-agent-list";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+import ThreadList from "./components/thread-list";
+import ChatInterface from "./components/chat-interface";
+import AgentSelector from "./components/Agent-select";
 
 export default function ChatAgent() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+  const threadListRef = useRef<{ refreshThreads: () => void }>(null);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const { agentsArray } = useAgentList();
 
-    // Add user message
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
+  useEffect(() => {
+    console.log("Agents loaded:", agentsArray);
+    if (agentsArray.length > 0 && !selectedAgentId) {
+      console.log("Setting default agent:", agentsArray[0].id);
+      setSelectedAgentId(agentsArray[1].id);
+    }
+  }, [agentsArray, selectedAgentId]);
 
-    const agent = mastraClient.getAgent("weatherAgent");
-    const response = await agent.streamVNext({
-      messages: [{ role: "user", content: input }],
-      threadId: "thread-1",
-      resourceId: "resource-1",
-    });
+  const handleThreadDelete = (deletedThreadId: string) => {
+    if (selectedThreadId === deletedThreadId) {
+      setSelectedThreadId(null);
+    }
+  };
 
-    let assistantMessage = "";
+  const handleAgentChange = (newAgentId: string) => {
+    // Only change if it's actually different
+    if (newAgentId !== selectedAgentId) {
+      console.log("✅ Agent change confirmed - proceeding with switch");
 
-    // Stream response chunks
-    await response.processDataStream({
-      onChunk: async (chunk) => {
-        if (chunk.type === "text-delta") {
-          assistantMessage += chunk.payload.text;
+      setSelectedAgentId(newAgentId);
 
-          // Update assistant message progressively
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (last?.role === "assistant") {
-              return [
-                ...prev.slice(0, -1),
-                { role: "assistant", content: assistantMessage },
-              ];
-            }
-            return [...prev, { role: "assistant", content: assistantMessage }];
-          });
-        }
-      },
-    });
+      // Clear selected thread when changing agents since threads are agent-specific
+      if (selectedThreadId) {
+        console.log("  🧹 Clearing selected thread (agent-specific threads)");
+        setSelectedThreadId(null);
+      }
 
-    setInput("");
+      console.log("✅ Agent changed successfully to:", newAgentId);
+      console.log(
+        "  📊 State updated - ThreadList will re-render with key:",
+        newAgentId
+      );
+    } else {
+      console.log(
+        "ℹ️ Agent is already selected:",
+        newAgentId,
+        "- no change needed"
+      );
+    }
+  };
+
+  const handleThreadUpdate = () => {
+    console.log("🔄 THREAD UPDATE REQUESTED:");
+    console.log("  🧵 Current agent:", selectedAgentId);
+    console.log("  📋 ThreadList ref exists:", !!threadListRef.current);
+
+    if (threadListRef.current?.refreshThreads) {
+      console.log("  ✅ Calling refreshThreads...");
+      threadListRef.current.refreshThreads();
+    } else {
+      console.warn("  ⚠️ refreshThreads method not available");
+    }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Chat Agent</h1>
+    <div className="w-full p-4">
+      {agentsArray.length > 0 && (
+        <div className="mb-4 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Chat Assistant
+          </h2>
+          <AgentSelector
+            agentsArray={agentsArray}
+            selectedAgentId={selectedAgentId}
+            onAgentChange={handleAgentChange}
+          />
+        </div>
+      )}
 
-      {/* Chat Window */}
-      <div className="border rounded-lg p-3  overflow-y-auto space-y-2">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`p-2 rounded-lg ${
-              m.role === "user"
-                ? "bg-blue-500 text-white self-end"
-                : "bg-gray-200 text-black self-start"
-            }`}
-          >
-            {m.content}
+      <div className="flex space-x-12 w-full h-full items-start">
+        {selectedAgentId && (
+          <ThreadList
+            key={selectedAgentId} // Force re-render when agent changes
+            ref={threadListRef}
+            selectedThreadId={selectedThreadId}
+            onThreadSelect={setSelectedThreadId}
+            onThreadDelete={handleThreadDelete}
+            agentId={selectedAgentId}
+          />
+        )}
+        {!selectedAgentId ? (
+          <div className="flex-1 flex items-center justify-center h-[600px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Loading agents...
+              </h3>
+              <p className="text-gray-500">
+                Please wait while we load available agents
+              </p>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Input Box */}
-      <div className="flex mt-4 gap-2">
-        <input
-          className="flex-1 border rounded p-2"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-        />
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={handleSend}
-        >
-          Send
-        </button>
+        ) : selectedThreadId ? (
+          <ChatInterface
+            agentId={selectedAgentId}
+            resourceId="resource-1"
+            threadId={selectedThreadId}
+            onThreadUpdate={handleThreadUpdate}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center h-[600px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Select a thread to start chatting
+              </h3>
+              <p className="text-gray-500">
+                Choose an existing conversation or create a new one
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

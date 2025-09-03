@@ -6,8 +6,12 @@ export const useAgentList = () => {
 
   useEffect(() => {
     async function listofAgents() {
-      const agents = await mastraClient.getAgents();
-      setAgentList(agents);
+      try {
+        const agents = await mastraClient.getAgents();
+        setAgentList(agents);
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
     }
 
     listofAgents();

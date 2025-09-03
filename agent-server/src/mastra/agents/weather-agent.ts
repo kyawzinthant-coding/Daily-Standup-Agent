@@ -5,7 +5,7 @@ import { weatherTool } from "../tools/weather-tool";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { PremiumMemory } from "../memory/weatherMemory";
 
-const openrouter = createOpenRouter({
+export const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 

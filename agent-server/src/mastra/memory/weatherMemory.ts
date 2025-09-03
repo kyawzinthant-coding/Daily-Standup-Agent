@@ -31,7 +31,7 @@ export const PremiumMemory = new Memory({
       generateTitle: {
         model: openrouter("z-ai/glm-4.5-air:free"),
         instructions:
-          "Generate a concise title for this conversation based on the first user message.",
+          "Generate a concise, 3-word maximum title for this conversation based on the first user message. Focus on the main topic or request. Examples: 'Paris Weather', 'Recipe Help', 'Travel Planning'.",
       },
     },
   },

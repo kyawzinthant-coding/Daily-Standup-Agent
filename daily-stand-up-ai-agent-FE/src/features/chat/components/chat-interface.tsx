@@ -32,15 +32,6 @@ export default function ChatInterface({
     }
   }, [fetchHistory, threadId, resourceId, agentId]);
 
-  // Clear messages when agent changes (since we switch threads when changing agents)
-  useEffect(() => {
-    // This will be triggered when agentId changes and we don't have a threadId yet
-    if (!threadId) {
-      // Clear messages when no thread is selected (happens when switching agents)
-      // The messages will be populated when a new thread is selected
-    }
-  }, [agentId, threadId]);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -99,7 +90,6 @@ export default function ChatInterface({
 
   return (
     <div className="flex flex-col w-full h-[600px] bg-white rounded-lg overflow-hidden border">
-      {/* Header */}
       <div className="px-4 py-3 bg-gray-50 border-b">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
